@@ -10,7 +10,7 @@ int compare_terms(const void *a, const void *b) {
     return strcmp(term_a->term, term_b->term);
 }
 
-// 比较函数用于按权重升序排序
+// compare function for sorting by weight in descending order
 int compare_weight(const void *a, const void *b) {
     const term *ta = (const term *)a;
     const term *tb = (const term *)b;
@@ -27,7 +27,7 @@ void read_in_terms(term **terms, int *pnterms, char *filename) {
         exit(1);
     }
 
-    // 读取术语数量
+    // Read the number of terms
     int num_terms;
     if (fscanf(fp, "%d\n", &num_terms) != 1) {
         fprintf(stderr, "Error reading number of terms\n");
@@ -35,7 +35,7 @@ void read_in_terms(term **terms, int *pnterms, char *filename) {
         exit(1);
     }
 
-    // 分配内存
+    // Allocate memory for terms
     *terms = (term *)malloc(num_terms * sizeof(term));
     if (*terms == NULL) {
         perror("Memory allocation failed");
@@ -43,7 +43,7 @@ void read_in_terms(term **terms, int *pnterms, char *filename) {
         exit(1);
     }
 
-    char buffer[1024]; // 足够大的缓冲区处理每行数据
+    char buffer[1024]; // Buffer to handle each line
     for (int i = 0; i < num_terms; i++) {
         if (fgets(buffer, sizeof(buffer), fp) == NULL) {
             fprintf(stderr, "Error reading line %d\n", i + 1);
@@ -52,14 +52,14 @@ void read_in_terms(term **terms, int *pnterms, char *filename) {
             exit(1);
         }
 
-        // 处理行数据
+        // Process the line
         char *start = buffer;
-        // 跳过前导空白
+        // Skip leading whitespace
         while (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r') {
             start++;
         }
 
-        // 解析权重
+        // Parse the weight
         char *end;
         double weight = strtod(start, &end);
         if (end == start) {
@@ -69,39 +69,39 @@ void read_in_terms(term **terms, int *pnterms, char *filename) {
             exit(1);
         }
 
-        // 跳过权重后的空白
+        // Skip whitespace after weight
         while (*end == ' ' || *end == '\t') {
             end++;
         }
 
-        // 处理术语（去除换行符）
+        // Process the term (remove newline characters)
         char *term_str = end;
         size_t term_len = strlen(term_str);
         while (term_len > 0 && (term_str[term_len - 1] == '\n' || term_str[term_len - 1] == '\r')) {
             term_str[--term_len] = '\0';
         }
 
-        // 存储到结构体
+        // Store in the struct
         strncpy((*terms)[i].term, term_str, sizeof((*terms)[i].term) - 1);
-        (*terms)[i].term[sizeof((*terms)[i].term) - 1] = '\0'; // 确保终止
+        (*terms)[i].term[sizeof((*terms)[i].term) - 1] = '\0'; // Ensure null-termination
         (*terms)[i].weight = weight;
     }
 
     fclose(fp);
 
-    // 按术语字典序排序
+    // Sort terms lexicographically
     qsort(*terms, num_terms, sizeof(term), compare_terms);
     *pnterms = num_terms;
 }
 
-//part 2
+// part 2
 int lowest_match(term *terms, int nterms, char *substr) {
     int low = 0;
     int high = nterms - 1;
     int ans = -1;
     size_t len = strlen(substr);
 
-    // 处理空字符串的特殊情况
+    // Handle empty string case
     if (len == 0) {
         return -1;
     }
@@ -112,7 +112,7 @@ int lowest_match(term *terms, int nterms, char *substr) {
 
         if (cmp == 0) {
             ans = mid;
-            high = mid - 1; // 继续向左寻找更小索引
+            high = mid - 1; // Continue searching to the left
         } else if (cmp < 0) {
             low = mid + 1;
         } else {
@@ -129,7 +129,7 @@ int highest_match(term *terms, int nterms, char *substr) {
     int ans = -1;
     size_t len = strlen(substr);
 
-    // 处理空字符串的特殊情况
+    // Handle empty string case
     if (len == 0) {
         return high;
     }
@@ -140,7 +140,7 @@ int highest_match(term *terms, int nterms, char *substr) {
 
         if (cmp == 0) {
             ans = mid;
-            low = mid + 1; // 继续向右寻找更大索引
+            low = mid + 1; // Continue searching to the right
         } else if (cmp < 0) {
             low = mid + 1;
         } else {
@@ -155,14 +155,14 @@ void autocomplete(term **answer, int *n_answer, term *terms, int nterms, char *s
     int low = lowest_match(terms, nterms, substr);
     int high = highest_match(terms, nterms, substr);
 
-    // 处理无匹配情况
+    // Handle no match case
     if (low == -1 || high == -1 || low > high) {
         *n_answer = 0;
         *answer = NULL;
         return;
     }
 
-    // 计算匹配数量并分配内存
+    // Calculate the number of matches and allocate memory
     int count = high - low + 1;
     *answer = (term *)malloc(count * sizeof(term));
     if (*answer == NULL) {
@@ -170,14 +170,13 @@ void autocomplete(term **answer, int *n_answer, term *terms, int nterms, char *s
         exit(1);
     }
 
-    // 复制匹配项
+    // Copy the matching terms
     memcpy(*answer, &terms[low], count * sizeof(term));
 
-    // 按权重排序
+    // Sort by weight
     qsort(*answer, count, sizeof(term), compare_weight);
     *n_answer = count;
 }
-
 
 // int main(void)
 // {
@@ -190,6 +189,8 @@ void autocomplete(term **answer, int *n_answer, term *terms, int nterms, char *s
 //     struct term *answer;
 //     int n_answer;
 //     autocomplete(&answer, &n_answer, terms, nterms, "Tor");
-//     //free allocated blocks here -- not required for the project, but good practice
+//     // Free allocated blocks here -- not required for the project, but good practice
+//     free(terms);
+//     free(answer);
 //     return 0;
 // }
